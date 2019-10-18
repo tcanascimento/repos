@@ -1,7 +1,7 @@
 buildscript {
     repositories {
         maven {
-            url 'https://services.contabilizei.com/artifactory/plugins-release'
+            url "${artifactory_url}"
             credentials {
                 username = "${artifactory_user}"
                 password = "${artifactory_password}"
