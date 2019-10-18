@@ -1,0 +1,125 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
+
+    /*configurations.maybeCreate("pitest")
+    dependencies {
+        classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.4.5'
+        classpath 'org.pitest:pitest-maven:1.4.9'
+        pitest 'org.pitest:pitest-junit5-plugin:0.9'
+    }*/
+
+    dependencies {
+        classpath 'com.bmuschko:gradle-clover-plugin:2.2.2'
+        classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7"
+        /*classpath 'org.pitest:pitest-maven:1.4.9'
+        classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.4.5'
+        classpath 'org.pitest:pitest-junit5-plugin:0.9'*/
+    }
+}
+apply plugin: com.bmuschko.gradle.clover.CloverPlugin
+apply plugin: org.sonarqube.gradle.SonarQubePlugin
+//apply plugin: info.solidsoft.gradle.pitest.PitestPlugin
+
+repositories {
+    mavenCentral()
+    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url 'https://jitpack.io' }
+    jcenter()
+}
+
+dependencies {
+    clover 'org.openclover:clover:4.3.1'
+}
+
+clover {
+    testIncludes = ['**/*Test.java']
+    targetPercentage = '75%'
+    excludes = ['**/dto/**', '**/request/**', '**/utils/**', '**/config/**', '**/logger/**', '**/message/**']
+    compiler {
+        encoding = 'UTF-8'
+        // used to add debug information for Spring applications
+        debug = true
+        additionalArgs = '-parameters'
+    }
+
+    report {
+        html = true
+        pdf = false
+        filter = 'log,main' //,getters,setters
+        // Support capturing test results from JUnix XML report
+        //testResultsDir = project.tasks.getByName('test').reports.junitXml.destination
+        testResultsInclude = 'TEST-*.xml'
+
+        columns {
+            coveredMethods format: 'longbar', min: '75'
+            coveredStatements format: '%'
+            coveredBranches format: 'raw'
+            totalPercentageCovered format: '%', scope: 'package'
+        }
+
+        historical {
+            enabled = false
+            historyIncludes = 'clover-*.xml.gz'
+            packageFilter = null
+            from = null
+            to = null
+            added {
+                range = 10
+                interval = '1 weeks'
+            }
+            mover {
+                threshold = 1
+                range = 10
+                interval = '3 weeks'
+            }
+            mover {
+                threshold = 1
+                range = 10
+                interval = '2 months'
+            }
+        }
+    }
+}
+
+/*jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.destination file("${buildDir}/jacocoHtml")
+    }
+}*/
+
+sonarqube {
+    properties {
+        property "sonar.host.url", "http://sonar-qa.contabilizei.com"
+        property "sonar.login", "${sonar_login}"
+        property "sonar.clover.reportPath", "${project.buildDir}/reports/clover/clover.xml"
+        property "sonar.core.codeCoveragePlugin", "clover"
+        property "sonar.tests", "src/test/java"
+        property "sonar.java.binaries", "${project.buildDir}/classes"
+        property "sonar.projectName", "${project.name}"
+        property "sonar.issuesReport.html.enable", true
+        property "sonar.issuesReport.console.enable", true
+//        property "sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml"
+        property "sonar.pitest.mode", "reuseReport"
+        property "sonar.pitest.reportsDirectory", "build/reports/pitest/"
+        property "sonar.test.exclusions", "**/dto/**,**/commons/**,**/swagger/**, **/output/**, **/token/**, **/utils/**, **/config/**,**/logger/**,**/message/**"
+        property "sonar.coverage.exclusions", "**/dto/**,**/swagger/**,**/commons/**, **/output/**,**/support/**,**/utils/**,**/config/**,**/request/**,**/logger/**,**/message/**"
+    }
+}
+
+/*pitest {
+    pitestVersion = "1.4.9"
+    testPlugin = 'junit5'
+    targetClasses = ['br.com.contabilizei']  //by default "${project.group}.*"
+    targetTests = ['br.com.contabilizei.*']
+    threads = 1
+//    jvmArgs = ['-Xmx1024m']
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+}*/
